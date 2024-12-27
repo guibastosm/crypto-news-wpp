@@ -94,7 +94,7 @@ class FeedParser:
         
         return all_news
 
-    def filter_news(self, latest_news_by_source: Dict[str, str]) -> List[News]:
+    def get_unpublished_news(self, latest_news_by_source: Dict[str, str]) -> List[News]:
         """
         Filtra as notícias baseado no último horário de publicação por fonte.
         
