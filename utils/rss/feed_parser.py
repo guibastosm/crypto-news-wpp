@@ -1,6 +1,16 @@
 import feedparser
 from typing import List, Dict, Optional
+from dataclasses import dataclass
 import re
+
+@dataclass
+class News:
+    title: str                    # Título é obrigatório
+    url: str                      # URL é obrigatório
+    source: str                   # Fonte é obrigatória
+    summary: Optional[str] = None # Resumo é opcional
+    image_url: Optional[str] = None # URL da imagem é opcional
+    image_format: Optional[str] = None # Formato da imagem é opcional
 
 class FeedParser:
     def __init__(self, rss_feeds: List[Dict[str, str]]):
@@ -16,7 +26,7 @@ class FeedParser:
         text = re.sub(r'\s+', ' ', text)
         return text.strip()
 
-    def parse_feeds(self) -> List[Dict]:
+    def parse_feeds(self) -> List[News]:
         all_news = []
         
         for feed_dict in self.rss_feeds:
@@ -51,18 +61,17 @@ class FeedParser:
                 summary = None
                 if hasattr(entry, 'summary'):
                     summary = self.clean_html(entry.summary)
-                    print(summary)
-
-                news_item = {
-                    'title': entry.title,
-                    'url': entry.link,
-                    'image_url': image_url,
-                    'image_format': image_format,
-                    'source': source,
-                    'summary': summary
-                }
                 
-                all_news.append(news_item)
+                news = News(
+                    title=entry.title,
+                    url=entry.link,
+                    source=source,
+                    summary=summary,
+                    image_url=image_url,
+                    image_format=image_format
+                )
+                
+                all_news.append(news)
         
         return all_news
 
@@ -73,15 +82,16 @@ rss_feeds = [
 
 def main():
     parser = FeedParser(rss_feeds)
-    news = parser.parse_feeds()
-    for item in news:
+    news_list = parser.parse_feeds()
+    for news in news_list:
         print("\nNotícia encontrada:")
-        print(f"Título: {item['title']}")
-        print(f"URL: {item['url']}")
-        print(f"Fonte: {item['source']}")
-        if item['image_url']:
-            print(f"Imagem ({item['image_format']}): {item['image_url']}")
-        print(f"Resumo: {item['summary']}")
+        print(f"Título: {news.title}")
+        print(f"URL: {news.url}")
+        print(f"Fonte: {news.source}")
+        if news.image_url:
+            print(f"Imagem ({news.image_format}): {news.image_url}")
+        if news.summary:
+            print(f"Resumo: {news.summary}")
         print("-" * 80)
 
 if __name__ == "__main__":
