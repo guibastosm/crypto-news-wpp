@@ -18,6 +18,7 @@ class News:
 class FeedParser:
     def __init__(self, rss_feeds: List[Dict[str, str]]):
         self.rss_feeds = rss_feeds
+        self.news = self._parse_feeds()
 
     def clean_html(self, html_text: str) -> str:
         """Remove tags HTML e retorna apenas o texto."""
@@ -40,7 +41,7 @@ class FeedParser:
         # Formatar no formato desejado
         return local_time.strftime('%Y-%m-%d %H:%M')
 
-    def parse_feeds(self) -> List[News]:
+    def _parse_feeds(self) -> List[News]:
         all_news = []
         
         for feed_dict in self.rss_feeds:
@@ -105,24 +106,19 @@ class FeedParser:
         Returns:
             Lista de notícias mais recentes que o último horário registrado para cada fonte
         """
+        # Se não houver dados no banco, retorna todas as notícias
+        if not latest_news_by_source:
+            return sorted(self.news, key=lambda x: x.published_time)
+            
         filtered_news = []
         
-        for feed_dict in self.rss_feeds:
-            for source, url in feed_dict.items():
-                feed = feedparser.parse(url)
-                latest_time = latest_news_by_source.get(source)
-                
-                if not latest_time:
-                    # Se não houver registro da última notícia desta fonte, pegar todas
-                    latest_time = "1970-01-01 00:00"
-                    
-                for entry in feed.entries:
-                    news = self._create_news_from_entry(entry, source)
-                    
-                    # Compara o horário da notícia com o último horário registrado
-                    if news.published_time > latest_time:
-                        filtered_news.append(news)
-        
+        for news in self.news:
+            latest_time = latest_news_by_source.get(news.source, "1970-01-01 00:00")
+            
+            # Compara o horário da notícia com o último horário registrado
+            if news.published_time > latest_time:
+                filtered_news.append(news)
+    
         # Ordena as notícias por data de publicação (mais recentes primeiro)
         filtered_news.sort(key=lambda x: x.published_time)
         return filtered_news
@@ -130,13 +126,12 @@ class FeedParser:
 
 rss_feeds = [
     {'Cointelegraph':'https://cointelegraph.com/rss'},
-    {'Intesting.com':'https://br.investing.com/rss/news_301.rss'}
+    {'Investing.com':'https://br.investing.com/rss/news_301.rss'}
 ]
 
 def main():
     parser = FeedParser(rss_feeds)
-    news_list = parser.parse_feeds()
-    for news in news_list:
+    for news in parser.news:
         print("\nNotícia encontrada:")
         print(f"Título: {news.title}")
         print(f"URL: {news.url}")
