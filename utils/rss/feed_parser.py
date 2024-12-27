@@ -94,6 +94,40 @@ class FeedParser:
         
         return all_news
 
+    def filter_news(self, latest_news_by_source: Dict[str, str]) -> List[News]:
+        """
+        Filtra as notícias baseado no último horário de publicação por fonte.
+        
+        Args:
+            latest_news_by_source: Dicionário com a fonte como chave e o último horário de publicação como valor
+                                Ex: {"Cointelegraph": "2024-12-01 00:00", "Investing.com": "2024-12-01 00:00"}
+        
+        Returns:
+            Lista de notícias mais recentes que o último horário registrado para cada fonte
+        """
+        filtered_news = []
+        
+        for feed_dict in self.rss_feeds:
+            for source, url in feed_dict.items():
+                feed = feedparser.parse(url)
+                latest_time = latest_news_by_source.get(source)
+                
+                if not latest_time:
+                    # Se não houver registro da última notícia desta fonte, pegar todas
+                    latest_time = "1970-01-01 00:00"
+                    
+                for entry in feed.entries:
+                    news = self._create_news_from_entry(entry, source)
+                    
+                    # Compara o horário da notícia com o último horário registrado
+                    if news.published_time > latest_time:
+                        filtered_news.append(news)
+        
+        # Ordena as notícias por data de publicação (mais recentes primeiro)
+        filtered_news.sort(key=lambda x: x.published_time)
+        return filtered_news
+
+
 rss_feeds = [
     {'Cointelegraph':'https://cointelegraph.com/rss'},
     {'Intesting.com':'https://br.investing.com/rss/news_301.rss'}
