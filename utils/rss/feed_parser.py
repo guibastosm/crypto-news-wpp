@@ -2,12 +2,15 @@ import feedparser
 from typing import List, Dict, Optional
 from dataclasses import dataclass
 import re
+from datetime import datetime, timedelta
+import time
 
 @dataclass
 class News:
     title: str                    # Título é obrigatório
     url: str                      # URL é obrigatório
     source: str                   # Fonte é obrigatória
+    published_time: str           # Data de publicação é obrigatória (formato: YYYY-MM-DD HH:MM:SS)
     summary: Optional[str] = None # Resumo é opcional
     image_url: Optional[str] = None # URL da imagem é opcional
     image_format: Optional[str] = None # Formato da imagem é opcional
@@ -25,6 +28,17 @@ class FeedParser:
         # Remove espaços extras
         text = re.sub(r'\s+', ' ', text)
         return text.strip()
+
+    def convert_to_local_time(self, parsed_time: time.struct_time) -> str:
+        """Converte time.struct_time para string no formato YYYY-MM-DD HH:MM:SS no fuso horário UTC-3."""
+        # Converter struct_time para datetime UTC
+        utc_time = datetime(*parsed_time[:6])
+        
+        # Ajustar para UTC-3 (São Paulo)
+        local_time = utc_time - timedelta(hours=3)
+        
+        # Formatar no formato desejado
+        return local_time.strftime('%Y-%m-%d %H:%M')
 
     def parse_feeds(self) -> List[News]:
         all_news = []
@@ -61,17 +75,22 @@ class FeedParser:
                 summary = None
                 if hasattr(entry, 'summary'):
                     summary = self.clean_html(entry.summary)
+
+                # Converter o tempo de publicação para o formato correto
+                published_time = self.convert_to_local_time(entry.published_parsed)
                 
                 news = News(
                     title=entry.title,
                     url=entry.link,
                     source=source,
+                    published_time=published_time,
                     summary=summary,
                     image_url=image_url,
                     image_format=image_format
                 )
                 
                 all_news.append(news)
+                all_news.sort(key=lambda x: x.published_time)
         
         return all_news
 
@@ -88,6 +107,7 @@ def main():
         print(f"Título: {news.title}")
         print(f"URL: {news.url}")
         print(f"Fonte: {news.source}")
+        print(f"Data de Publicação: {news.published_time}")
         if news.image_url:
             print(f"Imagem ({news.image_format}): {news.image_url}")
         if news.summary:
