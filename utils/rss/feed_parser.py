@@ -5,6 +5,17 @@ import re
 from datetime import datetime, timedelta
 import time
 
+DEFAULT_IMAGES = {
+    'Cointelegraph': {
+        'url': 'https://images.cointelegraph.com/cdn-cgi/image/format=auto,onerror=redirect,quality=90,width=370/https://s3.cointelegraph.com/uploads/2023-10/aa1373ce-e0ee-4341-84fa-efb0ca1dc1aa.jpg',
+        'format': 'jpg'
+    },
+    'Investing.com': {
+        'url': 'https://i-invdn-com.investing.com/news/newonInvesting.jpg',
+        'format': 'jpg'
+    }
+}
+
 @dataclass
 class News:
     title: str                    # Título é obrigatório
@@ -51,49 +62,48 @@ class FeedParser:
             feed = feedparser.parse(url)
             
             for entry in feed.entries:
-                # Extrair URL da imagem se disponível
-                image_url = None
-                if hasattr(entry, 'media_content'):
-                    for media in entry.media_content:
-                        if media.get('url', '').lower().endswith(('.jpg', '.png')):
-                            image_url = media['url']
-                            break
-                elif hasattr(entry, 'links'):
-                    for link in entry.links:
-                        if link.get('type', '').startswith('image/') and link.get('href', '').lower().endswith(('.jpg', '.png')):
-                            image_url = link['href']
-                            break
-
-                # Extrair formato da imagem
-                image_format = None
-                if image_url:
-                    if image_url.lower().endswith('.jpg'):
-                        image_format = 'jpg'
-                    elif image_url.lower().endswith('.png'):
-                        image_format = 'png'
-
-                # Extrair e limpar o summary
-                summary = None
-                if hasattr(entry, 'summary'):
-                    summary = self.clean_html(entry.summary)
-
-                # Converter o tempo de publicação para o formato correto
-                published_time = self.convert_to_local_time(entry.published_parsed)
-                
-                news = News(
-                    title=entry.title,
-                    url=entry.link,
-                    source=source,
-                    published_time=published_time,
-                    summary=summary,
-                    image_url=image_url,
-                    image_format=image_format
-                )
+                news = self._create_news_from_entry(entry, source)
                 
                 all_news.append(news)
-                all_news.sort(key=lambda x: x.published_time)
         
+        # Ordena as notícias por data de publicação (mais recentes primeiro)
+        all_news.sort(key=lambda x: x.published_time)
         return all_news
+
+    def _create_news_from_entry(self, entry: feedparser.FeedParserDict, source: str) -> News:
+        """
+        Cria um objeto News a partir de uma entrada do feed RSS.
+        """
+        # Obter a URL da imagem do feed
+        image_url = None
+        image_format = None
+        
+        if hasattr(entry, 'media_content') and entry.media_content:
+            image_url = entry.media_content[0]['url']
+            # Extrair o formato da imagem da URL
+            image_format = image_url.split('.')[-1].lower()
+        elif hasattr(entry, 'links'):
+            for link in entry.links:
+                if link.get('type', '').startswith('image/'):
+                    image_url = link['href']
+                    image_format = link['type'].split('/')[-1]
+                    break
+        
+        # Se não encontrou imagem, usar a imagem padrão para a fonte
+        if not image_url and source in DEFAULT_IMAGES:
+            image_url = DEFAULT_IMAGES[source]['url']
+            image_format = DEFAULT_IMAGES[source]['format']
+        
+        # Criar e retornar o objeto News
+        return News(
+            title=entry.title,
+            url=entry.link,
+            source=source,
+            published_time=self.convert_to_local_time(entry.published_parsed),
+            summary=self.clean_html(entry.summary) if hasattr(entry, 'summary') else None,
+            image_url=image_url,
+            image_format=image_format
+        )
 
     def get_unpublished_news(self, latest_news_by_source: Dict[str, str]) -> List[News]:
         """
