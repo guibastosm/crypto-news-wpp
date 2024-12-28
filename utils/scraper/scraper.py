@@ -59,7 +59,7 @@ if __name__ == "__main__":
         published_time="2023-01-01 00:00:00",
         summary="Teste",
         image_url="https://images.cointelegraph.com/images/840_aHR0cHM6Ly9zMy5jb2ludGVsZWdyYXBoLmNvbS91cGxvYWRzLzIwMjQtMTIvMDE5M2U0MzItOTg2YS03NmZmLTlmZWYtZjEzNTJhM2Q2NjE4.jpg",
-        image_format="jpg"
+        image_format="jpeg"
     )
     image_bytes, image_format = scraper.get_image_bytes(news)
     
