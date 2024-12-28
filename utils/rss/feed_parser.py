@@ -2,17 +2,18 @@ import feedparser
 from typing import List, Dict, Optional
 from dataclasses import dataclass
 import re
+import html
 from datetime import datetime, timedelta
 import time
 
 DEFAULT_IMAGES = {
     'Cointelegraph': {
         'url': 'https://images.cointelegraph.com/cdn-cgi/image/format=auto,onerror=redirect,quality=90,width=370/https://s3.cointelegraph.com/uploads/2023-10/aa1373ce-e0ee-4341-84fa-efb0ca1dc1aa.jpg',
-        'format': 'jpg'
+        'format': 'jpeg'
     },
     'Investing.com': {
         'url': 'https://i-invdn-com.investing.com/news/newonInvesting.jpg',
-        'format': 'jpg'
+        'format': 'jpeg'
     }
 }
 
@@ -32,11 +33,16 @@ class FeedParser:
         self.news = self._parse_feeds()
 
     def clean_html(self, html_text: str) -> str:
-        """Remove tags HTML e retorna apenas o texto."""
+        """Remove tags HTML, decodifica entidades HTML e retorna apenas o texto."""
+        if not html_text:
+            return ""
+            
         # Remove tags de imagem completas
         text = re.sub(r'<p[^>]*>(?:\s*<img[^>]*>\s*)*</p>', '', html_text)
         # Remove todas as outras tags HTML
         text = re.sub(r'<[^>]+>', '', text)
+        # Decodifica entidades HTML
+        text = html.unescape(text)
         # Remove espaços extras
         text = re.sub(r'\s+', ' ', text)
         return text.strip()
@@ -96,7 +102,7 @@ class FeedParser:
         
         # Criar e retornar o objeto News
         return News(
-            title=entry.title,
+            title=self.clean_html(entry.title),
             url=entry.link,
             source=source,
             published_time=self.convert_to_local_time(entry.published_parsed),
@@ -135,7 +141,7 @@ class FeedParser:
 
 
 rss_feeds = [
-    {'Cointelegraph':'https://cointelegraph.com/rss'},
+    {'Cointelegraph':'https://br.cointelegraph.com/rss'},
     {'Investing.com':'https://br.investing.com/rss/news_301.rss'}
 ]
 
