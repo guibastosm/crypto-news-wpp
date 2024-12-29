@@ -14,6 +14,10 @@ DEFAULT_IMAGES = {
     'Investing.com': {
         'url': 'https://i-invdn-com.investing.com/news/newonInvesting.jpg',
         'format': 'jpeg'
+    },
+    'CryptoNews.com': {
+        'url': 'https://cryptonews.com/wp-content/uploads/2023/11/1.jpg',
+        'format': 'jpeg'
     }
 }
 
@@ -45,6 +49,8 @@ class FeedParser:
         text = html.unescape(text)
         # Remove espaços extras
         text = re.sub(r'\s+', ' ', text)
+        # Remove o texto padrão do Cryptonews
+        text = re.sub(r'The post.*appeared first on CryptoNews Brasil\.?$', '', text)
         return text.strip()
 
     def convert_to_local_time(self, parsed_time: time.struct_time) -> str:
@@ -142,7 +148,8 @@ class FeedParser:
 
 rss_feeds = [
     {'Cointelegraph':'https://br.cointelegraph.com/rss'},
-    {'Investing.com':'https://br.investing.com/rss/news_301.rss'}
+    {'Investing.com':'https://br.investing.com/rss/news_301.rss'},
+    {'CryptoNews.com':'https://cryptonews.com/br/noticias/feed/'}
 ]
 
 def main():
