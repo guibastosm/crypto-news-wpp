@@ -11,7 +11,8 @@ class WhatsAppSender:
         load_dotenv()
         
         # Configurar endpoint e ID da newsletter
-        self.base_url = "http://localhost:3000"
+        self.whatsapp_host = os.getenv("WHATSAPP_HOST")
+        self.base_url = f"http://{self.whatsapp_host}:3000"
         self.newsletter_id = os.getenv("NEWSLETTER_ID")
         if not self.newsletter_id:
             raise ValueError("NEWSLETTER_ID deve estar definida no arquivo .env")
