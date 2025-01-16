@@ -1,4 +1,5 @@
 feedparser
-requests
 python-dotenv
 supabase
+requests==2.31.0
+selenium==4.16.0
